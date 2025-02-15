@@ -56,7 +56,7 @@ function getBangredirectUrl() {
   const selectedBang = bangs.find((b) => b.t === bangCandidate) ?? defaultBang;
 
   // Remove the first bang from the query
-  const cleanQuery = query.replace(/![a-z]+\s*/i, "").trim();
+  const cleanQuery = query.replace(/![a-z0-9]+\s*/i, "").trim();
 
   // Format of the url is:
   // https://www.google.com/search?q={{{s}}}
