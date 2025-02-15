@@ -2,29 +2,31 @@ import { bangs } from "./bang";
 
 const defaultBang = bangs.find((b) => b.t === "g");
 
-function doBangRedirect() {
+function getBangredirectUrl() {
   const url = new URL(window.location.href);
   const query = url.searchParams.get("q")?.trim() ?? "";
   if (!query) return null;
+
   const match = query.match(/!([a-z]+)/i);
   if (!match) return null;
+
   const bangCandidate = match[1].toLowerCase();
   const selectedBang = bangs.find((b) => b.t === bangCandidate) ?? defaultBang;
 
-  return selectedBang;
+  // Remove the first bang from the query
+  const cleanQuery = query.replace(/![a-z]+\s*/i, "").trim();
+
+  // Format of the url is:
+  // https://www.google.com/search?q={{{s}}}
+  const searchUrl = selectedBang?.u.replace(
+    "{{{s}}}",
+    encodeURIComponent(cleanQuery)
+  );
+  if (!searchUrl) return null;
+
+  return searchUrl;
 }
 
-const bang = doBangRedirect();
-if (bang) {
-  console.log("bang", bang);
+const searchUrl = getBangredirectUrl() ?? "https://www.google.com";
 
-  // window.location.replace(bang.d + "?q=" + encodeURIComponent(query));
-}
-
-document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
-  <div>
-    <h1>T3 Search</h1>
-  </div>
-`;
-
-setupCounter(document.querySelector<HTMLButtonElement>("#counter")!);
+window.location.replace(searchUrl);
