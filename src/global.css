@@ -89,6 +89,7 @@ textarea {
 .content-container {
   max-width: 36rem;
   text-align: center;
+  padding: 0 8px;
 }
 
 /* Update url-input width to be 100% since container will control max width */
