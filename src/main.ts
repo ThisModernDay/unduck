@@ -50,7 +50,7 @@ function getBangredirectUrl() {
     return null;
   }
 
-  const match = query.match(/!([a-z]+)/i);
+  const match = query.match(/!([a-z0-9]+)/i);
 
   const bangCandidate = match?.[1]?.toLowerCase();
   const selectedBang = bangs.find((b) => b.t === bangCandidate) ?? defaultBang;
