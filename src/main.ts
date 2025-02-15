@@ -2,10 +2,22 @@ import { bangs } from "./bang";
 
 const defaultBang = bangs.find((b) => b.t === "g");
 
+function noSearchDefaultPageRender() {
+  const app = document.querySelector<HTMLDivElement>("#app")!;
+  app.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+      <h1>Unduck</h1>
+    </div>
+  `;
+}
+
 function getBangredirectUrl() {
   const url = new URL(window.location.href);
   const query = url.searchParams.get("q")?.trim() ?? "";
-  if (!query) return null;
+  if (!query) {
+    noSearchDefaultPageRender();
+    return null;
+  }
 
   const match = query.match(/!([a-z]+)/i);
 
@@ -26,6 +38,10 @@ function getBangredirectUrl() {
   return searchUrl;
 }
 
-const searchUrl = getBangredirectUrl() ?? "https://www.google.com";
+function doRedirect() {
+  const searchUrl = getBangredirectUrl();
+  if (!searchUrl) return;
+  window.location.replace(searchUrl);
+}
 
-window.location.replace(searchUrl);
+doRedirect();
