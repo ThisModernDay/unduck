@@ -23,7 +23,11 @@ function noSearchDefaultPageRender() {
         </div>
       </div>
       <footer class="footer">
-        created by <a href="https://x.com/theo" target="_blank">theo</a> with help from <a href="https://t3.chat" target="_blank">t3.chat</a>
+        <a href="https://t3.chat" target="_blank">t3.chat</a>
+        •
+        <a href="https://x.com/theo" target="_blank">theo</a>
+        •
+        <a href="https://github.com/t3dotgg/unduck" target="_blank">github</a>
       </footer>
     </div>
   `;
