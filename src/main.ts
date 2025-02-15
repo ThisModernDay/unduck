@@ -1,8 +1,6 @@
 import { bangs } from "./bang";
 import "./global.css";
 
-const defaultBang = bangs.find((b) => b.t === "g");
-
 function noSearchDefaultPageRender() {
   const app = document.querySelector<HTMLDivElement>("#app")!;
   app.innerHTML = `
@@ -45,6 +43,9 @@ function noSearchDefaultPageRender() {
     }, 2000);
   });
 }
+
+const LS_DEFAULT_BANG = localStorage.getItem("default-bang") ?? "g";
+const defaultBang = bangs.find((b) => b.t === LS_DEFAULT_BANG);
 
 function getBangredirectUrl() {
   const url = new URL(window.location.href);
