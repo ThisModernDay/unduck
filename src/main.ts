@@ -8,9 +8,8 @@ function getBangredirectUrl() {
   if (!query) return null;
 
   const match = query.match(/!([a-z]+)/i);
-  if (!match) return null;
 
-  const bangCandidate = match[1].toLowerCase();
+  const bangCandidate = match?.[1]?.toLowerCase();
   const selectedBang = bangs.find((b) => b.t === bangCandidate) ?? defaultBang;
 
   // Remove the first bang from the query
