@@ -22,6 +22,9 @@ function noSearchDefaultPageRender() {
           </button>
         </div>
       </div>
+      <footer class="footer">
+        created by <a href="https://x.com/theo" target="_blank">theo</a>
+      </footer>
     </div>
   `;
 

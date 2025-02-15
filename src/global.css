@@ -117,3 +117,24 @@ textarea {
 .copy-button.copied {
   background: #28a745;
 }
+
+/* Add footer styles */
+.footer {
+  position: fixed;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
+
+.footer a {
+  color: #666;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.footer a:hover {
+  color: #333;
+}
