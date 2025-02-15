@@ -14,7 +14,7 @@ function noSearchDefaultPageRender() {
           <input 
             type="text" 
             class="url-input"
-            value="https://unduck.link/search?q={{{s}}}" 
+            value="https://unduck.link?q=%s"
             readonly 
           />
           <button class="copy-button">
