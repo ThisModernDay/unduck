@@ -1,24 +1,30 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import { bangs } from "./bang";
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+const defaultBang = bangs.find((b) => b.t === "g");
+
+function doBangRedirect() {
+  const url = new URL(window.location.href);
+  const query = url.searchParams.get("q")?.trim() ?? "";
+  if (!query) return null;
+  const match = query.match(/!([a-z]+)/i);
+  if (!match) return null;
+  const bangCandidate = match[1].toLowerCase();
+  const selectedBang = bangs.find((b) => b.t === bangCandidate) ?? defaultBang;
+
+  return selectedBang;
+}
+
+const bang = doBangRedirect();
+if (bang) {
+  console.log("bang", bang);
+
+  // window.location.replace(bang.d + "?q=" + encodeURIComponent(query));
+}
+
+document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
+    <h1>T3 Search</h1>
   </div>
-`
+`;
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+setupCounter(document.querySelector<HTMLButtonElement>("#counter")!);
