@@ -41,27 +41,13 @@ function saveCustomBangs(customBangs: CustomBang[]) {
   localStorage.setItem(CUSTOM_BANGS_KEY, JSON.stringify(customBangs));
 }
 
-function validateBang(trigger: string, url: string): { isValid: boolean; error?: string } {
-  // Check if trigger is valid
-  if (!trigger) return { isValid: false, error: "Bang trigger is required" };
+function validateBangTrigger(trigger: string): { isValid: boolean; error?: string } {
+  if (!trigger) return { isValid: true }; // Empty is valid while typing
   if (!/^[a-z0-9]+$/i.test(trigger)) {
     return { isValid: false, error: "Bang trigger can only contain letters and numbers" };
   }
 
-  // Check if URL is valid
-  if (!url) return { isValid: false, error: "URL template is required" };
-  if (!url.includes("{{{s}}}")) {
-    return { isValid: false, error: "URL template must contain {{{s}}} placeholder" };
-  }
-
-  try {
-    // Test if URL is valid with a placeholder
-    new URL(url.replace("{{{s}}}", "test"));
-  } catch {
-    return { isValid: false, error: "Invalid URL format" };
-  }
-
-  // Check for conflicts with built-in bangs
+  // Check for conflicts with built-in bangs and custom bangs
   const customBangs = getCustomBangs();
   const allBangs = [...bangs, ...customBangs];
   if (allBangs.some(b => b.t.toLowerCase() === trigger.toLowerCase())) {
@@ -69,6 +55,20 @@ function validateBang(trigger: string, url: string): { isValid: boolean; error?:
   }
 
   return { isValid: true };
+}
+
+function validateBangUrl(url: string): { isValid: boolean; error?: string } {
+  if (!url) return { isValid: true }; // Empty is valid while typing
+  if (!url.includes("{{{s}}}")) {
+    return { isValid: false, error: "URL template must contain {{{s}}} placeholder" };
+  }
+
+  try {
+    new URL(url.replace("{{{s}}}", "test"));
+    return { isValid: true };
+  } catch {
+    return { isValid: false, error: "Invalid URL format" };
+  }
 }
 
 class SearchHistoryDB {
@@ -240,10 +240,15 @@ class SearchHistoryDB {
 
 const db = new SearchHistoryDB();
 
-// Initialize DB when the script loads
-await db.init().catch(error => {
-  console.error("Failed to initialize database:", error);
-});
+// Initialize DB and start the application
+async function initializeApp() {
+  await db.init().catch(error => {
+    console.error("Failed to initialize database:", error);
+  });
+
+  // Start the application
+  void doRedirect();
+}
 
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp);
@@ -360,36 +365,6 @@ function renderCustomBangsList(): string {
       `).join('')}
     </div>
   `;
-}
-
-function validateBangTrigger(trigger: string): { isValid: boolean; error?: string } {
-  if (!trigger) return { isValid: true }; // Empty is valid while typing
-  if (!/^[a-z0-9]+$/i.test(trigger)) {
-    return { isValid: false, error: "Bang trigger can only contain letters and numbers" };
-  }
-
-  // Check for conflicts with built-in bangs and custom bangs
-  const customBangs = getCustomBangs();
-  const allBangs = [...bangs, ...customBangs];
-  if (allBangs.some(b => b.t.toLowerCase() === trigger.toLowerCase())) {
-    return { isValid: false, error: "Bang trigger already exists" };
-  }
-
-  return { isValid: true };
-}
-
-function validateBangUrl(url: string): { isValid: boolean; error?: string } {
-  if (!url) return { isValid: true }; // Empty is valid while typing
-  if (!url.includes("{{{s}}}")) {
-    return { isValid: false, error: "URL template must contain {{{s}}} placeholder" };
-  }
-
-  try {
-    new URL(url.replace("{{{s}}}", "test"));
-    return { isValid: true };
-  } catch {
-    return { isValid: false, error: "Invalid URL format" };
-  }
 }
 
 async function noSearchDefaultPageRender() {
@@ -784,4 +759,5 @@ async function doRedirect() {
   }
 }
 
-void doRedirect();
+// Initialize the application
+initializeApp();

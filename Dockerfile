@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine as build
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
@@ -7,13 +7,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY pnpm-lock.yaml ./
 
-# Install pnpm
+# Install pnpm and dependencies
 RUN npm install -g pnpm
-
-# Install dependencies
 RUN pnpm install
 
-# Copy source code
+# Copy source code (node_modules is excluded via .dockerignore)
 COPY . .
 
 # Build the application

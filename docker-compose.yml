@@ -5,8 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: adversarialink/unduck:latest
     ports:
-      - "80:80"
+      - "3099:80"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
