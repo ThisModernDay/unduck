@@ -665,6 +665,8 @@ textarea {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 4px;
   gap: 1rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .bang-info {
@@ -672,6 +674,7 @@ textarea {
   flex-direction: column;
   gap: 0.25rem;
   overflow: hidden;
+  min-width: 0;
 }
 
 .bang-info strong {
@@ -685,6 +688,7 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  word-break: break-all;
 }
 
 .delete-bang {

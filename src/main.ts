@@ -426,7 +426,7 @@ async function noSearchDefaultPageRender() {
     <div class="page-container">
       <div class="content-container">
         <h1>Und*ck</h1>
-        <p>DuckDuckGo's bang redirects are too slow. Add the following URL as a custom search engine to your browser. Enables <a href="https://duckduckgo.com/bang.html" target="_blank">all of DuckDuckGo's bangs.</a></p>
+        <p>A faster way to use <a href="https://duckduckgo.com/bang.html" target="_blank">DuckDuckGo bangs</a>. Add this URL as a custom search engine to your browser. Your searches and custom bangs are stored locally.</p>
         <div class="url-container">
           <input
             type="text"
@@ -750,10 +750,10 @@ async function getBangredirectUrl() {
 async function doRedirect() {
   try {
     const searchUrl = await getBangredirectUrl();
-    if (!searchUrl) return;
+  if (!searchUrl) return;
 
     // Redirect immediately after history is updated
-    window.location.replace(searchUrl);
+  window.location.replace(searchUrl);
   } catch (error) {
     console.error("Error during redirect:", error);
   }
