@@ -19,7 +19,22 @@ DuckDuckGo does their redirects server side. Their DNS is...not always great. Re
 
 I solved this by doing all of the work client side. Once you've went to https://unduck.thismodern.dev once, the JS is all cache'd and will never need to be downloaded again. Your device does the redirects, not me.
 
-## Deployment
+## Self-Hosting
+
+### URL Configuration
+
+When self-hosting, you'll need to update the URL in the code to match your domain. Edit the URL in `src/main.ts`:
+
+```typescript
+<input
+  type="text"
+  class="url-input"
+  value="https://your-domain.com/?q=%s"
+  readonly
+/>
+```
+
+Replace `your-domain.com` with your actual domain where you'll be hosting the service.
 
 ### Docker
 
