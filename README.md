@@ -18,3 +18,40 @@ https://unduck.thismodern.dev/?q=%s
 DuckDuckGo does their redirects server side. Their DNS is...not always great. Result is that it often takes ages.
 
 I solved this by doing all of the work client side. Once you've went to https://unduck.thismodern.dev once, the JS is all cache'd and will never need to be downloaded again. Your device does the redirects, not me.
+
+## Deployment
+
+### Docker
+
+The application can be deployed using Docker. We provide both a Dockerfile and docker-compose.yml for easy deployment.
+
+#### Using Docker Compose (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ThisModernDay/unduck.git
+cd unduck
+```
+
+2. Start the container:
+```bash
+docker-compose up -d
+```
+
+The application will be available at http://localhost.
+
+#### Using Docker Directly
+
+1. Build the image:
+```bash
+docker build -t unduck .
+```
+
+2. Run the container:
+```bash
+docker run -d -p 80:80 unduck
+```
+
+### Configuration
+
+The default configuration serves the application on port 80. To use a different port, modify the `ports` section in `docker-compose.yml` or adjust the `-p` flag in the docker run command.
