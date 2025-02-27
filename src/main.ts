@@ -670,6 +670,11 @@ function attachHistoryEventListeners() {
       const trigger = (addBangForm.querySelector("#bangTrigger") as HTMLInputElement).value.trim();
       const url = (addBangForm.querySelector("#bangUrl") as HTMLInputElement).value.trim();
 
+      // Don't allow empty submissions
+      if (!trigger || !url) {
+        return;
+      }
+
       const triggerValidation = validateBangTrigger(trigger);
       const urlValidation = validateBangUrl(url);
 
@@ -683,8 +688,10 @@ function attachHistoryEventListeners() {
 
       // Update the list and reset form
       const listContainer = customBangsModal?.querySelector(".custom-bangs-list");
-      if (listContainer) {
+      if (listContainer && customBangsModal) {
         listContainer.innerHTML = renderCustomBangsList();
+        // Reattach delete button listeners
+        attachDeleteButtonListeners(customBangsModal);
       }
       addBangForm.reset();
 
@@ -700,22 +707,34 @@ function attachHistoryEventListeners() {
   }
 
   // Add delete bang functionality
-  const deleteButtons = app.querySelectorAll<HTMLButtonElement>(".delete-bang");
-  deleteButtons.forEach(button => {
-    button.addEventListener("click", () => {
-      const trigger = button.dataset.trigger;
-      if (!trigger) return;
+  function attachDeleteButtonListeners(modal: HTMLElement) {
+    const deleteButtons = modal.querySelectorAll<HTMLButtonElement>(".delete-bang");
+    deleteButtons.forEach(button => {
+      const newButton = button.cloneNode(true) as HTMLButtonElement;
+      button.parentNode?.replaceChild(newButton, button);
 
-      const customBangs = getCustomBangs().filter(b => b.t !== trigger);
-      saveCustomBangs(customBangs);
+      newButton.addEventListener("click", () => {
+        const trigger = newButton.dataset.trigger;
+        if (!trigger) return;
 
-      // Update the list
-      const listContainer = customBangsModal?.querySelector(".custom-bangs-list");
-      if (listContainer) {
-        listContainer.innerHTML = renderCustomBangsList();
-      }
+        const customBangs = getCustomBangs().filter(b => b.t !== trigger);
+        saveCustomBangs(customBangs);
+
+        // Update the list
+        const listContainer = modal?.querySelector(".custom-bangs-list");
+        if (listContainer) {
+          listContainer.innerHTML = renderCustomBangsList();
+          // Reattach delete button listeners
+          attachDeleteButtonListeners(modal);
+        }
+      });
     });
-  });
+  }
+
+  // Initial attachment of delete button listeners
+  if (customBangsModal) {
+    attachDeleteButtonListeners(customBangsModal);
+  }
 }
 
 async function getBangredirectUrl() {
@@ -750,10 +769,10 @@ async function getBangredirectUrl() {
 async function doRedirect() {
   try {
     const searchUrl = await getBangredirectUrl();
-  if (!searchUrl) return;
+    if (!searchUrl) return;
 
     // Redirect immediately after history is updated
-  window.location.replace(searchUrl);
+    window.location.replace(searchUrl);
   } catch (error) {
     console.error("Error during redirect:", error);
   }
