@@ -17,13 +17,20 @@
       rel="preload"
       as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      id="font-preload"
     />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       media="print"
-      onload="this.media='all'"
+      id="font-stylesheet"
     />
+    <script>
+      // Load font stylesheet properly without using inline event handlers
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('font-stylesheet').media = 'all';
+      });
+    </script>
     <script
       defer
       data-domain="unduck.link"
