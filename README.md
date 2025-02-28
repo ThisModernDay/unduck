@@ -6,6 +6,7 @@
 > - Improved UI with modals and animations
 > - Better error handling and validation
 > - Local-first approach with IndexedDB storage
+> - Configurable base URL through environment variables
 
 ## Original Project
 
@@ -61,6 +62,31 @@ docker run -d -p 80:80 unduck
 ### Configuration
 
 The default configuration serves the application on port 80. To use a different port, modify the `ports` section in `docker-compose.yml` or adjust the `-p` flag in the docker run command.
+
+#### Environment Variables
+
+- `VITE_BASE_URL`: The base URL where the application is hosted (default: https://unduck.thismodern.dev)
+
+You can set this environment variable in different ways:
+
+1. Using Docker Compose:
+```bash
+VITE_BASE_URL=https://your-domain.com docker-compose up -d
+```
+
+2. Using Docker directly:
+```bash
+docker build --build-arg VITE_BASE_URL=https://your-domain.com -t unduck .
+docker run -d -p 80:80 unduck
+```
+
+3. Using a .env file:
+```env
+VITE_BASE_URL=https://your-domain.com
+```
+
+4. For Vercel deployment:
+Add `VITE_BASE_URL` in your project's environment variables through the Vercel dashboard.
 
 ## Credits
 

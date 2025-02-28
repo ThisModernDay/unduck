@@ -14,7 +14,9 @@ RUN pnpm install
 # Copy source code (node_modules is excluded via .dockerignore)
 COPY . .
 
-# Build the application
+# Build the application with environment variables
+ARG VITE_BASE_URL
+ENV VITE_BASE_URL=$VITE_BASE_URL
 RUN pnpm build
 
 # Production stage

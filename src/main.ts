@@ -1,5 +1,6 @@
 import { bangs } from "./bang";
 import "./global.css";
+import config from "./config";
 import clipboardIcon from "lucide-static/icons/clipboard.svg";
 import clipboardCheckIcon from "lucide-static/icons/clipboard-check.svg";
 import clockIcon from "lucide-static/icons/clock.svg";
@@ -431,7 +432,7 @@ async function noSearchDefaultPageRender() {
           <input
             type="text"
             class="url-input"
-            value="https://unduck.thismodern.dev/?q=%s"
+            value="${config.baseUrl}/?q=%s"
             readonly
           />
           <button class="copy-button" data-tooltip="Copy URL">
