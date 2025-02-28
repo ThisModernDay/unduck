@@ -695,6 +695,9 @@ function attachHistoryEventListeners() {
       statsModal.classList.remove("hidden");
       statsModal.classList.add("flex");
     });
+
+    // Attach modal event listeners
+    attachModalEventListeners(statsModal);
   }
 
   // Add event listener for the settings button (custom bangs)
@@ -709,6 +712,9 @@ function attachHistoryEventListeners() {
       customBangsModal.classList.remove("hidden");
       customBangsModal.classList.add("flex");
     });
+
+    // Attach modal event listeners
+    attachModalEventListeners(customBangsModal);
   }
 
   // Add event listener for the clear history button
@@ -723,19 +729,10 @@ function attachHistoryEventListeners() {
       clearHistoryModal.classList.remove("hidden");
       clearHistoryModal.classList.add("flex");
     });
-  }
 
-  // Add event listeners for the close modal buttons
-  const closeModalButtons = app.querySelectorAll<HTMLButtonElement>(".close-modal");
-  closeModalButtons.forEach(button => {
-    button.addEventListener("click", () => {
-      const modal = button.closest(".fixed.inset-0.z-50");
-      if (modal) {
-        modal.classList.remove("flex");
-        modal.classList.add("hidden");
-      }
-    });
-  });
+    // Attach modal event listeners
+    attachModalEventListeners(clearHistoryModal);
+  }
 
   // Add event listeners for the clear history options
   const clearOptions = app.querySelectorAll<HTMLButtonElement>(".clear-option");
@@ -768,39 +765,6 @@ function attachHistoryEventListeners() {
       }
     });
   });
-
-  // Add event listener for the clear stats button
-  const clearStatsButton = app.querySelector<HTMLButtonElement>("#clear-stats-button");
-  if (clearStatsButton) {
-    clearStatsButton.addEventListener("click", async () => {
-      await db.clearStats();
-
-      // Update the stats modal with fresh data
-      const statsModal = app.querySelector<HTMLDivElement>("#statsModal");
-      if (statsModal) {
-        const newStatsModalHtml = await renderStatsModal();
-        statsModal.innerHTML = newStatsModalHtml;
-
-        // Reattach event listeners for the close button and clear stats button
-        const closeButton = statsModal.querySelector<HTMLButtonElement>(".close-modal");
-        if (closeButton) {
-          closeButton.addEventListener("click", () => {
-            statsModal.classList.remove("flex");
-            statsModal.classList.add("hidden");
-          });
-        }
-
-        const newClearStatsButton = statsModal.querySelector<HTMLButtonElement>("#clear-stats-button");
-        if (newClearStatsButton) {
-          newClearStatsButton.addEventListener("click", async () => {
-            await db.clearStats();
-            const refreshedStatsModalHtml = await renderStatsModal();
-            statsModal.innerHTML = refreshedStatsModalHtml;
-          });
-        }
-      }
-    });
-  }
 
   // Add event listener for the history filter dropdown
   const historyFilter = app.querySelector<HTMLSelectElement>(".history-filter");
@@ -927,6 +891,35 @@ function attachDeleteBangListeners() {
       }
     });
   });
+}
+
+// Helper function to attach modal event listeners
+function attachModalEventListeners(modal: HTMLElement) {
+  // Attach close button event listener
+  const closeButton = modal.querySelector<HTMLButtonElement>(".close-modal");
+  if (closeButton) {
+    closeButton.addEventListener("click", () => {
+      modal.classList.remove("flex");
+      modal.classList.add("hidden");
+    });
+  }
+
+  // If this is the stats modal, also attach the clear stats button event listener
+  if (modal.id === "statsModal") {
+    const clearStatsButton = modal.querySelector<HTMLButtonElement>("#clear-stats-button");
+    if (clearStatsButton) {
+      clearStatsButton.addEventListener("click", async () => {
+        await db.clearStats();
+
+        // Update the modal content
+        const newStatsModalHtml = await renderStatsModal();
+        modal.innerHTML = newStatsModalHtml;
+
+        // Reattach event listeners to the updated modal
+        attachModalEventListeners(modal);
+      });
+    }
+  }
 }
 
 // Implementation of doRedirect function
