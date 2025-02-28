@@ -247,15 +247,17 @@ function renderCustomBangsManager() {
           <div>
             <label class="block text-sm text-[#A6ADC8] mb-1" for="bang-trigger">Trigger</label>
             <input type="text" id="bang-trigger" class="w-full bg-[#1E1E2E] border border-[#B4BEFE]/20 rounded px-3 py-2 text-[#CDD6F4] focus:outline-none focus:border-[#B4BEFE]" placeholder="e.g. gh">
+            <p id="trigger-validation" class="hidden mt-1 text-xs text-red-400"></p>
           </div>
           <div>
             <label class="block text-sm text-[#A6ADC8] mb-1" for="bang-url">URL Template</label>
             <input type="text" id="bang-url" class="w-full bg-[#1E1E2E] border border-[#B4BEFE]/20 rounded px-3 py-2 text-[#CDD6F4] focus:outline-none focus:border-[#B4BEFE]" placeholder="e.g. https://github.com/search?q={{{s}}}">
             <p class="text-xs text-[#A6ADC8] mt-1">Use {{{s}}} as a placeholder for the search term</p>
+            <p id="url-validation" class="hidden mt-1 text-xs text-red-400"></p>
           </div>
           <div class="flex gap-2 justify-end">
             <button id="cancel-add-bang" class="px-3 py-1.5 rounded text-[#A6ADC8] hover:text-[#CDD6F4] hover:bg-[#9399B2]/30 transition-colors">Cancel</button>
-            <button id="save-bang" class="px-3 py-1.5 rounded bg-[#B4BEFE]/20 text-[#B4BEFE] hover:bg-[#B4BEFE]/30 transition-colors">Save</button>
+            <button id="save-bang" class="px-3 py-1.5 rounded bg-[#B4BEFE]/20 text-[#B4BEFE] hover:bg-[#B4BEFE]/30 transition-colors" disabled>Save</button>
           </div>
         </div>
       </div>
@@ -294,9 +296,11 @@ function renderCustomBangsManager() {
   const addBangButton = document.getElementById('add-bang-button');
   const addBangForm = document.getElementById('add-bang-form');
   const cancelAddBang = document.getElementById('cancel-add-bang');
-  const saveBang = document.getElementById('save-bang');
+  const saveBang = document.getElementById('save-bang') as HTMLButtonElement;
   const bangTrigger = document.getElementById('bang-trigger') as HTMLInputElement;
   const bangUrl = document.getElementById('bang-url') as HTMLInputElement;
+  const triggerValidation = document.getElementById('trigger-validation');
+  const urlValidation = document.getElementById('url-validation');
 
   if (addBangButton && addBangForm) {
     addBangButton.addEventListener('click', () => {
@@ -309,7 +313,60 @@ function renderCustomBangsManager() {
       addBangForm.classList.add('hidden');
       bangTrigger.value = '';
       bangUrl.value = '';
+      // Reset validations
+      if (triggerValidation) triggerValidation.classList.add('hidden');
+      if (urlValidation) urlValidation.classList.add('hidden');
+      if (saveBang) saveBang.disabled = true;
     });
+  }
+
+  // Validation function
+  function validateForm() {
+    let isValid = true;
+    const trigger = bangTrigger.value.trim();
+    const url = bangUrl.value.trim();
+    const customBangs = getCustomBangs();
+    const existingBang = customBangs.find(b => b.t.toLowerCase() === trigger.toLowerCase());
+
+    // Validate trigger
+    if (!trigger) {
+      triggerValidation!.textContent = "Trigger cannot be empty";
+      triggerValidation!.classList.remove('hidden');
+      isValid = false;
+    } else if (existingBang) {
+      triggerValidation!.textContent = "This bang already exists and will be updated";
+      triggerValidation!.classList.remove('hidden');
+      // This is a warning, not an error
+      isValid = true;
+    } else {
+      triggerValidation!.classList.add('hidden');
+    }
+
+    // Validate URL
+    if (!url) {
+      urlValidation!.textContent = "URL template cannot be empty";
+      urlValidation!.classList.remove('hidden');
+      isValid = false;
+    } else if (!url.includes('{{{s}}}')) {
+      urlValidation!.textContent = "URL must contain {{{s}}} placeholder";
+      urlValidation!.classList.remove('hidden');
+      isValid = false;
+    } else {
+      urlValidation!.classList.add('hidden');
+    }
+
+    // Enable/disable save button
+    if (saveBang) {
+      saveBang.disabled = !isValid;
+    }
+
+    return isValid;
+  }
+
+  // Add real-time validation
+  if (bangTrigger && bangUrl) {
+    bangTrigger.addEventListener('input', validateForm);
+    bangUrl.addEventListener('input', validateForm);
   }
 
   if (saveBang && addBangForm && bangTrigger && bangUrl) {
@@ -317,7 +374,7 @@ function renderCustomBangsManager() {
       const trigger = bangTrigger.value.trim();
       const url = bangUrl.value.trim();
 
-      if (trigger && url) {
+      if (validateForm()) {
         addCustomBang(trigger, url);
         addBangForm.classList.add('hidden');
         bangTrigger.value = '';
