@@ -8,7 +8,7 @@ import filterIcon from "lucide-static/icons/filter.svg";
 import trashIcon from "lucide-static/icons/trash-2.svg";
 import xIcon from "lucide-static/icons/x.svg";
 import plusIcon from "lucide-static/icons/plus.svg";
-import settingsIcon from "lucide-static/icons/settings.svg";
+import alertCircleIcon from "lucide-static/icons/alert-circle.svg";
 
 const DB_NAME = "unduck";
 const DB_VERSION = 1;
@@ -329,10 +329,10 @@ async function renderSearchHistory(filter: TimeFilter = "1h"): Promise<string> {
           </div>
         </div>
         <div class="history-actions">
-          <button class="settings-button" aria-label="Manage custom bangs">
-            <img src="${settingsIcon}" alt="Settings" class="settings-icon" />
+          <button class="settings-button" data-tooltip="Manage custom bangs" aria-label="Manage custom bangs">
+            <img src="${alertCircleIcon}" alt="Custom Bangs" class="settings-icon" />
           </button>
-          <button class="clear-history-button" aria-label="Clear history">
+          <button class="clear-history-button" data-tooltip="Clear history" aria-label="Clear history">
             <img src="${trashIcon}" alt="Clear" class="clear-icon" />
           </button>
         </div>
@@ -358,7 +358,7 @@ function renderCustomBangsList(): string {
             <strong>!${bang.t}</strong>
             <span class="bang-url">${bang.u}</span>
           </div>
-          <button class="delete-bang" data-trigger="${bang.t}">
+          <button class="delete-bang" data-tooltip="Delete bang" data-trigger="${bang.t}">
             <img src="${trashIcon}" alt="Delete" />
           </button>
         </div>
@@ -434,7 +434,7 @@ async function noSearchDefaultPageRender() {
             value="https://unduck.thismodern.dev/?q=%s"
             readonly
           />
-          <button class="copy-button">
+          <button class="copy-button" data-tooltip="Copy URL">
             <img src="${clipboardIcon}" alt="Copy" />
           </button>
         </div>

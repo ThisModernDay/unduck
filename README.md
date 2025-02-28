@@ -1,11 +1,17 @@
 # Unduck
 
-> **Enhanced Fork**: This fork adds several improvements to the original Unduck:
+> **Enhanced Fork**: This fork adds several improvements to the original [Unduck by Theo](https://github.com/t3dotgg/unduck):
 > - Search history with filtering options (1h, 24h, week, all)
 > - Custom bangs management
 > - Improved UI with modals and animations
 > - Better error handling and validation
 > - Local-first approach with IndexedDB storage
+
+## Original Project
+
+This project is a fork of [Unduck](https://github.com/t3dotgg/unduck) created by [Theo Browne](https://github.com/t3dotgg). The original project provides a fast, local-first solution for DuckDuckGo bang redirects. All core functionality and the brilliant idea behind this project are credited to Theo.
+
+## Overview
 
 DuckDuckGo's bang redirects are too slow. Add the following URL as a custom search engine to your browser. Enables all of DuckDuckGo's bangs to work, but much faster.
 
@@ -55,3 +61,8 @@ docker run -d -p 80:80 unduck
 ### Configuration
 
 The default configuration serves the application on port 80. To use a different port, modify the `ports` section in `docker-compose.yml` or adjust the `-p` flag in the docker run command.
+
+## Credits
+
+- Original project: [Unduck](https://github.com/t3dotgg/unduck) by [Theo Browne](https://github.com/t3dotgg)
+- Enhanced version by [ThisModernDay](https://github.com/ThisModernDay)
