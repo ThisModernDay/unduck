@@ -11,7 +11,7 @@ import filterIcon from "lucide-static/icons/filter.svg";
 import trashIcon from "lucide-static/icons/trash-2.svg";
 import xIcon from "lucide-static/icons/x.svg";
 import plusIcon from "lucide-static/icons/plus.svg";
-import alertCircleIcon from "lucide-static/icons/alert-circle.svg";
+import commandIcon from "lucide-static/icons/command.svg";
 
 const DB_NAME = "unduck";
 const DB_VERSION = 1;
@@ -333,7 +333,7 @@ async function renderSearchHistory(filter: TimeFilter = "1h"): Promise<string> {
         </div>
         <div class="history-actions">
           <button class="settings-button" data-tooltip="Manage custom bangs" aria-label="Manage custom bangs">
-            <img src="${alertCircleIcon}" alt="Custom Bangs" class="settings-icon" />
+            <img src="${commandIcon}" alt="Custom Bangs" class="settings-icon" />
           </button>
           <button class="clear-history-button" data-tooltip="Clear history" aria-label="Clear history">
             <img src="${trashIcon}" alt="Clear" class="clear-icon" />
