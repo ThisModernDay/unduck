@@ -12,7 +12,7 @@ import filterIcon from "lucide-static/icons/filter.svg";
 import trashIcon from "lucide-static/icons/trash-2.svg";
 import xIcon from "lucide-static/icons/x.svg";
 import plusIcon from "lucide-static/icons/plus.svg";
-import chartIcon from "lucide-static/icons/bar-chart-2.svg";
+import chartIcon from "lucide-static/icons/chart-bar.svg";
 
 const DB_NAME = "unduck";
 const DB_VERSION = 2;
