@@ -12,10 +12,12 @@ import filterIcon from "lucide-static/icons/filter.svg";
 import trashIcon from "lucide-static/icons/trash-2.svg";
 import xIcon from "lucide-static/icons/x.svg";
 import plusIcon from "lucide-static/icons/plus.svg";
+import chartIcon from "lucide-static/icons/bar-chart-2.svg";
 
 const DB_NAME = "unduck";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "searchHistory";
+const STATS_STORE_NAME = "statistics";
 const LS_DEFAULT_BANG = localStorage.getItem("default-bang") ?? "g";
 const defaultBang = bangs.find((b) => b.t === LS_DEFAULT_BANG);
 
@@ -30,6 +32,12 @@ interface HistoryItem {
 interface CustomBang {
   t: string;  // trigger
   u: string;  // url template
+}
+
+interface BangStat {
+  bang: string;
+  count: number;
+  lastUsed: number;
 }
 
 // Add custom bangs management
@@ -89,12 +97,23 @@ class SearchHistoryDB {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
+
+        // Create search history store if it doesn't exist
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, {
             keyPath: "id",
             autoIncrement: true,
           });
           store.createIndex("timestamp", "timestamp");
+        }
+
+        // Create statistics store if it doesn't exist
+        if (!db.objectStoreNames.contains(STATS_STORE_NAME)) {
+          const statsStore = db.createObjectStore(STATS_STORE_NAME, {
+            keyPath: "bang"
+          });
+          statsStore.createIndex("count", "count");
+          statsStore.createIndex("lastUsed", "lastUsed");
         }
       };
     });
@@ -239,6 +258,124 @@ class SearchHistoryDB {
       tx.onerror = () => reject(tx.error);
     });
   }
+
+  async trackBangUsage(bangTrigger: string): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STATS_STORE_NAME, "readwrite");
+      const store = tx.objectStore(STATS_STORE_NAME);
+
+      // Get current stats for this bang if they exist
+      const getRequest = store.get(bangTrigger);
+
+      getRequest.onsuccess = () => {
+        const existingStat = getRequest.result as BangStat | undefined;
+        const now = Date.now();
+
+        if (existingStat) {
+          // Update existing stat
+          const updateRequest = store.put({
+            ...existingStat,
+            count: existingStat.count + 1,
+            lastUsed: now
+          });
+
+          updateRequest.onsuccess = () => resolve();
+          updateRequest.onerror = () => reject(updateRequest.error);
+        } else {
+          // Create new stat
+          const addRequest = store.add({
+            bang: bangTrigger,
+            count: 1,
+            lastUsed: now
+          });
+
+          addRequest.onsuccess = () => resolve();
+          addRequest.onerror = () => reject(addRequest.error);
+        }
+      };
+
+      getRequest.onerror = () => reject(getRequest.error);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async getTopBangs(limit: number = 10): Promise<BangStat[]> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STATS_STORE_NAME, "readonly");
+      const store = tx.objectStore(STATS_STORE_NAME);
+      const getAllRequest = store.getAll();
+
+      getAllRequest.onsuccess = () => {
+        const stats = getAllRequest.result as BangStat[];
+        // Sort by count (descending) and take the top 'limit' items
+        const topBangs = stats
+          .sort((a, b) => b.count - a.count)
+          .slice(0, limit);
+
+        resolve(topBangs);
+      };
+
+      getAllRequest.onerror = () => reject(getAllRequest.error);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async getRecentBangs(limit: number = 5): Promise<BangStat[]> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STATS_STORE_NAME, "readonly");
+      const store = tx.objectStore(STATS_STORE_NAME);
+      const getAllRequest = store.getAll();
+
+      getAllRequest.onsuccess = () => {
+        const stats = getAllRequest.result as BangStat[];
+        // Sort by last used (descending) and take the top 'limit' items
+        const recentBangs = stats
+          .sort((a, b) => b.lastUsed - a.lastUsed)
+          .slice(0, limit);
+
+        resolve(recentBangs);
+      };
+
+      getAllRequest.onerror = () => reject(getAllRequest.error);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async getTotalSearchCount(): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      const countRequest = store.count();
+
+      countRequest.onsuccess = () => {
+        resolve(countRequest.result);
+      };
+
+      countRequest.onerror = () => reject(countRequest.error);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async clearStats(): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STATS_STORE_NAME, "readwrite");
+      const store = tx.objectStore(STATS_STORE_NAME);
+      const request = store.clear();
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
 }
 
 const db = new SearchHistoryDB();
@@ -296,7 +433,7 @@ async function renderSearchHistory(filter: TimeFilter = "1h"): Promise<string> {
       .map(item => `
         <button class="w-full flex items-start p-3.5 bg-[#313244]/30 hover:bg-[#45475A]/50 rounded-xl border border-[#B4BEFE]/20 text-[#CDD6F4] hover:translate-x-1 transition-all" data-query="${item.query}">
           <div class="w-full">
-            <span class="block text-xs text-[#A6ADC8] font-medium">${formatDate(item.timestamp)}</span>
+            <span class="text-left text-xs text-[#A6ADC8] font-medium">${formatDate(item.timestamp)}</span>
             <div class="flex items-center gap-3 mt-1.5">
               <img src="${clockIcon}" alt="History" class="w-4 h-4 opacity-80 invert" />
               <span class="truncate">${item.query}</span>
@@ -335,6 +472,9 @@ async function renderSearchHistory(filter: TimeFilter = "1h"): Promise<string> {
           </div>
         </div>
         <div class="flex gap-2 items-center">
+          <button id="stats-button" class="stats-button p-2 text-[#A6ADC8] hover:text-[#CDD6F4] hover:bg-[#9399B2]/30 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Usage Statistics">
+            <img src="${chartIcon}" alt="Stats" class="w-[18px] h-[18px] opacity-80 invert" />
+          </button>
           <button id="settings-button" class="settings-button p-2 text-[#A6ADC8] hover:text-[#CDD6F4] hover:bg-[#9399B2]/30 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center">
             <span class="text-xl font-bold leading-none">!</span>
           </button>
@@ -385,6 +525,7 @@ function addTooltip(element: HTMLElement, text: string) {
 async function noSearchDefaultPageRender() {
   const app = document.querySelector<HTMLDivElement>("#app")!;
   const historyHtml = await renderSearchHistory("1h");
+  const statsModalHtml = await renderStatsModal();
 
   app.innerHTML = `
     <div class="fixed inset-0 z-50 w-screen h-screen pointer-events-none">
@@ -440,6 +581,9 @@ async function noSearchDefaultPageRender() {
             </form>
           </div>
         </div>
+      </div>
+      <div class="flex hidden fixed inset-0 z-50 justify-center items-center backdrop-blur-md pointer-events-auto bg-[#181825]/90" id="statsModal">
+        ${statsModalHtml}
       </div>
     </div>
     <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8 bg-gradient-to-b from-[#1E1E2E] via-[#181825] to-[#313244]">
@@ -539,11 +683,28 @@ function attachHistoryEventListeners() {
     });
   }
 
+  // Add event listener for the stats button
+  const statsButton = app.querySelector<HTMLButtonElement>("#stats-button");
+  const statsModal = app.querySelector<HTMLDivElement>("#statsModal");
+
+  if (statsButton && statsModal) {
+    // Add tooltip to stats button
+    addTooltip(statsButton, "Usage Statistics");
+
+    statsButton.addEventListener("click", () => {
+      statsModal.classList.remove("hidden");
+      statsModal.classList.add("flex");
+    });
+  }
+
   // Add event listener for the settings button (custom bangs)
   const settingsButton = app.querySelector<HTMLButtonElement>("#settings-button");
   const customBangsModal = app.querySelector<HTMLDivElement>("#customBangsModal");
 
   if (settingsButton && customBangsModal) {
+    // Add tooltip to settings button
+    addTooltip(settingsButton, "Custom Bangs");
+
     settingsButton.addEventListener("click", () => {
       customBangsModal.classList.remove("hidden");
       customBangsModal.classList.add("flex");
@@ -555,6 +716,9 @@ function attachHistoryEventListeners() {
   const clearHistoryModal = app.querySelector<HTMLDivElement>("#clearHistoryModal");
 
   if (clearHistoryButton && clearHistoryModal) {
+    // Add tooltip to clear history button
+    addTooltip(clearHistoryButton, "Clear History");
+
     clearHistoryButton.addEventListener("click", () => {
       clearHistoryModal.classList.remove("hidden");
       clearHistoryModal.classList.add("flex");
@@ -604,6 +768,39 @@ function attachHistoryEventListeners() {
       }
     });
   });
+
+  // Add event listener for the clear stats button
+  const clearStatsButton = app.querySelector<HTMLButtonElement>("#clear-stats-button");
+  if (clearStatsButton) {
+    clearStatsButton.addEventListener("click", async () => {
+      await db.clearStats();
+
+      // Update the stats modal with fresh data
+      const statsModal = app.querySelector<HTMLDivElement>("#statsModal");
+      if (statsModal) {
+        const newStatsModalHtml = await renderStatsModal();
+        statsModal.innerHTML = newStatsModalHtml;
+
+        // Reattach event listeners for the close button and clear stats button
+        const closeButton = statsModal.querySelector<HTMLButtonElement>(".close-modal");
+        if (closeButton) {
+          closeButton.addEventListener("click", () => {
+            statsModal.classList.remove("flex");
+            statsModal.classList.add("hidden");
+          });
+        }
+
+        const newClearStatsButton = statsModal.querySelector<HTMLButtonElement>("#clear-stats-button");
+        if (newClearStatsButton) {
+          newClearStatsButton.addEventListener("click", async () => {
+            await db.clearStats();
+            const refreshedStatsModalHtml = await renderStatsModal();
+            statsModal.innerHTML = refreshedStatsModalHtml;
+          });
+        }
+      }
+    });
+  }
 
   // Add event listener for the history filter dropdown
   const historyFilter = app.querySelector<HTMLSelectElement>(".history-filter");
@@ -732,9 +929,6 @@ function attachDeleteBangListeners() {
   });
 }
 
-// Fix for doRedirect reference error
-// declare function doRedirect(): void;
-
 // Implementation of doRedirect function
 function doRedirect() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -748,6 +942,9 @@ function doRedirect() {
     if (query.startsWith("!")) {
       const bangTrigger = query.substring(1).split(" ")[0];
       const searchTerm = query.substring(bangTrigger.length + 1).trim();
+
+      // Track bang usage
+      void db.trackBangUsage(bangTrigger);
 
       // Check custom bangs first
       const customBangs = getCustomBangs();
@@ -768,6 +965,8 @@ function doRedirect() {
 
     // Default to the default bang if no bang is specified or bang not found
     if (defaultBang) {
+      // Track default bang usage
+      void db.trackBangUsage(defaultBang.t);
       window.location.href = defaultBang.u.replace("{{{s}}}", encodeURIComponent(query));
       return;
     }
@@ -775,6 +974,78 @@ function doRedirect() {
     // No query, show the default page
     void noSearchDefaultPageRender();
   }
+}
+
+async function renderStatsModal(): Promise<string> {
+  // Get statistics data
+  const topBangs = await db.getTopBangs(5);
+  const recentBangs = await db.getRecentBangs(5);
+  const totalSearches = await db.getTotalSearchCount();
+
+  // Format the top bangs list
+  const topBangsList = topBangs.length > 0
+    ? topBangs.map((stat, index) => `
+        <div class="flex items-center justify-between p-3 ${index !== topBangs.length - 1 ? 'border-b border-[#313244]' : ''}">
+          <div class="flex items-center gap-2">
+            <span class="text-[#B4BEFE] font-medium">${index + 1}.</span>
+            <span class="text-[#CDD6F4]">!${stat.bang}</span>
+          </div>
+          <span class="text-[#A6ADC8] text-sm">${stat.count} uses</span>
+        </div>
+      `).join('')
+    : `<div class="p-4 text-center text-[#A6ADC8] italic">No bang statistics yet</div>`;
+
+  // Format the recent bangs list
+  const recentBangsList = recentBangs.length > 0
+    ? recentBangs.map((stat, index) => `
+        <div class="flex items-center justify-between p-3 ${index !== recentBangs.length - 1 ? 'border-b border-[#313244]' : ''}">
+          <span class="text-[#CDD6F4]">!${stat.bang}</span>
+          <span class="text-[#A6ADC8] text-sm">${formatDate(stat.lastUsed)}</span>
+        </div>
+      `).join('')
+    : `<div class="p-4 text-center text-[#A6ADC8] italic">No recent bangs</div>`;
+
+  return `
+    <div class="w-[90%] max-w-md bg-[#1E1E2E] rounded-xl border ${theme.colors.border} shadow-2xl transform transition-all">
+      <div class="flex justify-between items-center p-5 border-b border-[#313244]">
+        <h3 class="text-lg font-semibold ${theme.colors.text}">Usage Statistics</h3>
+        <button class="p-2 ${theme.colors.textSecondary} hover:${theme.colors.text} ${theme.colors.buttonHover} rounded-lg transition-colors close-modal">
+          <img src="${xIcon}" alt="Close" class="w-5 h-5 invert" />
+        </button>
+      </div>
+      <div class="p-5">
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="bg-[#313244]/30 p-4 rounded-xl border border-[#B4BEFE]/20 text-center">
+            <div class="text-2xl font-bold text-[#CDD6F4]">${totalSearches}</div>
+            <div class="text-sm text-[#A6ADC8]">Total Searches</div>
+          </div>
+          <div class="bg-[#313244]/30 p-4 rounded-xl border border-[#B4BEFE]/20 text-center">
+            <div class="text-2xl font-bold text-[#CDD6F4]">${topBangs.length}</div>
+            <div class="text-sm text-[#A6ADC8]">Unique Bangs</div>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h4 class="text-base font-semibold text-[#CDD6F4] mb-3">Most Used Bangs</h4>
+          <div class="bg-[#313244]/30 rounded-xl border border-[#B4BEFE]/20 overflow-hidden">
+            ${topBangsList}
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h4 class="text-base font-semibold text-[#CDD6F4] mb-3">Recently Used Bangs</h4>
+          <div class="bg-[#313244]/30 rounded-xl border border-[#B4BEFE]/20 overflow-hidden">
+            ${recentBangsList}
+          </div>
+        </div>
+
+        <button id="clear-stats-button" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#313244]/50 hover:bg-[#45475A]/50 rounded-xl border border-[#B4BEFE]/20 ${theme.colors.text} transition-colors">
+          <img src="${trashIcon}" alt="" class="w-4 h-4 invert" />
+          Clear Statistics
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 // Initialize the application
