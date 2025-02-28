@@ -1,15 +1,17 @@
 import { bangs } from "./bang";
 import "./global.css";
 import config from "./config";
-import clipboardIcon from "lucide-static/icons/clipboard.svg";
-import clipboardCheckIcon from "lucide-static/icons/clipboard-check.svg";
-import clockIcon from "lucide-static/icons/clock.svg";
-import chevronDownIcon from "lucide-static/icons/chevron-down.svg";
-import filterIcon from "lucide-static/icons/filter.svg";
-import trashIcon from "lucide-static/icons/trash-2.svg";
-import xIcon from "lucide-static/icons/x.svg";
-import plusIcon from "lucide-static/icons/plus.svg";
-import alertCircleIcon from "lucide-static/icons/alert-circle.svg";
+
+// Icon imports
+const clipboardIcon = "/icons/clipboard.svg";
+const clipboardCheckIcon = "/icons/clipboard-check.svg";
+const clockIcon = "/icons/clock.svg";
+const chevronDownIcon = "/icons/chevron-down.svg";
+const filterIcon = "/icons/filter.svg";
+const trashIcon = "/icons/trash-2.svg";
+const xIcon = "/icons/x.svg";
+const plusIcon = "/icons/plus.svg";
+const alertCircleIcon = "/icons/alert-circle.svg";
 
 const DB_NAME = "unduck";
 const DB_VERSION = 1;
