@@ -304,6 +304,25 @@ function renderCustomBangsManager() {
 
   if (addBangButton && addBangForm) {
     addBangButton.addEventListener('click', () => {
+      // Verify bangs array is loaded
+      if (bangs && Array.isArray(bangs)) {
+        console.log(`Bangs array is loaded with ${bangs.length} items`);
+        // Log a few examples to verify content
+        if (bangs.length > 0) {
+          const examples = bangs.slice(0, 3);
+          console.log("Example bangs:", examples);
+
+          // Check if common bangs exist
+          const commonBangs = ['g', 'yt', 'gh', 'w'];
+          commonBangs.forEach(trigger => {
+            const found = bangs.find(b => b.t && b.t.toLowerCase() === trigger.toLowerCase());
+            console.log(`Bang "${trigger}" exists: ${found ? 'Yes' : 'No'}`);
+          });
+        }
+      } else {
+        console.warn("Bangs array is not properly loaded");
+      }
+
       addBangForm.classList.remove('hidden');
     });
   }
@@ -326,18 +345,34 @@ function renderCustomBangsManager() {
     const trigger = bangTrigger.value.trim();
     const url = bangUrl.value.trim();
     const customBangs = getCustomBangs();
-    const existingBang = customBangs.find(b => b.t.toLowerCase() === trigger.toLowerCase());
+    const existingCustomBang = customBangs.find(b => b.t.toLowerCase() === trigger.toLowerCase());
+
+    // Check against built-in bangs
+    let existingBuiltInBang = null;
+    if (bangs && Array.isArray(bangs)) {
+      existingBuiltInBang = bangs.find(b => b.t && b.t.toLowerCase() === trigger.toLowerCase());
+      console.log(`Checking trigger "${trigger}" against built-in bangs: ${existingBuiltInBang ? 'Found match' : 'No match'}`);
+      if (existingBuiltInBang) {
+        console.log(`Found built-in bang match: ${JSON.stringify(existingBuiltInBang)}`);
+      }
+    } else {
+      console.warn("Built-in bangs array is not available for validation");
+    }
 
     // Validate trigger
     if (!trigger) {
       triggerValidation!.textContent = "Trigger cannot be empty";
       triggerValidation!.classList.remove('hidden');
       isValid = false;
-    } else if (existingBang) {
+    } else if (existingCustomBang) {
       triggerValidation!.textContent = "This bang already exists and will be updated";
       triggerValidation!.classList.remove('hidden');
       // This is a warning, not an error
       isValid = true;
+    } else if (existingBuiltInBang) {
+      triggerValidation!.textContent = "This bang already exists as a built-in bang";
+      triggerValidation!.classList.remove('hidden');
+      isValid = false;
     } else {
       triggerValidation!.classList.add('hidden');
     }
@@ -561,19 +596,22 @@ async function renderSearchHistory() {
 
           html += `
             <div class="flex items-center justify-between bg-[#313244]/30 p-3 rounded-lg border border-[#B4BEFE]/20 search-item" data-bang="${search.bangUsed || ''}">
-              <div class="flex gap-3 items-center">
+              <div class="flex flex-1 gap-3 items-center cursor-pointer search-item-content hover:bg-[#313244]/80 rounded-lg transition-colors p-1" data-query="${search.query}" data-bang="${search.bangUsed || ''}">
                 <div class="text-[#A6ADC8]">
                   <img src="${clockIcon}" alt="Time" class="w-5 h-5 invert" />
                 </div>
-                <div>
-                  <div class="text-[#CDD6F4]">${search.query}</div>
+                <div class="flex-1">
+                  <div class="text-[#CDD6F4] flex items-center">
+                    <span>${search.query}</span>
+                    <span class="ml-2 text-[#A6ADC8] text-xs">(click to search)</span>
+                  </div>
                   <div class="text-xs text-[#A6ADC8] flex items-center gap-1 mt-1">
                     <span>at ${timeString}</span>
                     ${search.bangUsed ? `<span class="ml-2 bg-[#B4BEFE]/20 text-[#B4BEFE] px-1.5 py-0.5 rounded text-xs">!${search.bangUsed}</span>` : ''}
                   </div>
                 </div>
               </div>
-              <button class="delete-search text-[#A6ADC8] hover:text-[#CDD6F4] p-1.5 rounded-lg hover:bg-[#9399B2]/30 transition-colors" data-id="${search.id}">
+              <button class="delete-search text-[#A6ADC8] hover:text-[#CDD6F4] p-1.5 rounded-lg hover:bg-[#9399B2]/30 transition-colors ml-2" data-id="${search.id}">
                 <img src="${trashIcon}" alt="Delete" class="w-4 h-4 invert" />
               </button>
             </div>
@@ -597,6 +635,28 @@ async function renderSearchHistory() {
         const id = Number((e.currentTarget as HTMLElement).dataset.id);
         await searchHistoryDB.deleteSearch(id);
         renderSearchHistory();
+      });
+    });
+
+    // Add event listeners for clickable search items
+    const searchItemContents = document.querySelectorAll('.search-item-content');
+    searchItemContents.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const element = e.currentTarget as HTMLElement;
+        const query = element.dataset.query;
+        const bangUsed = element.dataset.bang;
+
+        if (query) {
+          // Generate the search URL using our reusable function
+          const searchUrl = generateSearchUrl(query, bangUsed);
+
+          if (searchUrl) {
+            // Open in new tab
+            console.log(`Opening search in new tab: ${searchUrl}`);
+            window.open(searchUrl, '_blank');
+          }
+        }
       });
     });
 
@@ -845,6 +905,44 @@ function noSearchDefaultPageRender() {
 const LS_DEFAULT_BANG = localStorage.getItem("default-bang") ?? "g";
 const defaultBang = bangs.find((b) => b.t.toLowerCase() === LS_DEFAULT_BANG.toLowerCase());
 
+// Function to generate a search URL based on query and bang
+function generateSearchUrl(query: string, bangTrigger?: string): string | null {
+  if (!query) {
+    return null;
+  }
+
+  // If a bang trigger is provided, try to find it
+  if (bangTrigger) {
+    // Check custom bangs first
+    const customBangs = getCustomBangs();
+    const customBang = customBangs.find(b => b.t.toLowerCase() === bangTrigger.toLowerCase());
+
+    if (customBang) {
+      console.log(`Using custom bang: ${customBang.t} -> ${customBang.u}`);
+      return customBang.u.replace("{{{s}}}", encodeURIComponent(query).replace(/%2F/g, "/"));
+    }
+
+    // Then check available bangs
+    if (bangs && Array.isArray(bangs)) {
+      const bang = bangs.find(b => b.t && b.t.toLowerCase() === bangTrigger.toLowerCase());
+      if (bang) {
+        console.log(`Using built-in bang: ${bang.t} -> ${bang.u}`);
+        return bang.u.replace("{{{s}}}", encodeURIComponent(query).replace(/%2F/g, "/"));
+      }
+    }
+  }
+
+  // Default to the default bang if no bang is specified or bang not found
+  if (bangs && Array.isArray(bangs) && defaultBang) {
+    console.log(`Using default bang: ${defaultBang.t} -> ${defaultBang.u}`);
+    return defaultBang.u.replace("{{{s}}}", encodeURIComponent(query).replace(/%2F/g, "/"));
+  } else {
+    // Fallback to Google if defaultBang is not available
+    console.log("No default bang available, using Google fallback");
+    return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+  }
+}
+
 function getBangredirectUrl(): string | null {
   const urlParams = new URLSearchParams(window.location.search);
   const query = urlParams.get("q")?.trim();
@@ -871,47 +969,55 @@ function getBangredirectUrl(): string | null {
 
     console.log(`Bang trigger: "${bangTrigger}", Search term: "${searchTerm}"`);
 
-    // Check custom bangs first
-    const customBangs = getCustomBangs();
-    console.log(`Custom bangs available: ${customBangs.length}`);
-    const customBang = customBangs.find(b => b.t.toLowerCase() === bangTrigger);
+    // Check for a search URL using the extracted bang and search term
+    const searchUrl = generateSearchUrl(searchTerm, bangTrigger);
 
-    if (customBang) {
-      console.log(`Using custom bang: ${customBang.t} -> ${customBang.u}`);
+    if (searchUrl) {
       // Add to search history
-      searchHistoryDB.addSearch(searchTerm, customBang.t).catch(err => console.error("Error adding to history:", err));
-      return customBang.u.replace("{{{s}}}", encodeURIComponent(searchTerm).replace(/%2F/g, "/"));
-    }
-
-    // Then check available bangs
-    if (bangs && Array.isArray(bangs)) {
-      const bang = bangs.find(b => b.t && b.t.toLowerCase() === bangTrigger);
-      if (bang) {
-        console.log(`Using built-in bang: ${bang.t} -> ${bang.u}`);
-        // Add to search history
-        searchHistoryDB.addSearch(searchTerm, bang.t).catch(err => console.error("Error adding to history:", err));
-        return bang.u.replace("{{{s}}}", encodeURIComponent(searchTerm).replace(/%2F/g, "/"));
-      } else {
-        console.log(`No built-in bang found for trigger: ${bangTrigger}`);
-      }
-    } else {
-      console.error("Bangs array is not available or not an array");
+      searchHistoryDB.addSearch(searchTerm, bangTrigger).catch(err => console.error("Error adding to history:", err));
+      return searchUrl;
     }
   }
 
-  // Default to the default bang if no bang is specified or bang not found
-  if (bangs && Array.isArray(bangs) && defaultBang) {
-    console.log(`Using default bang: ${defaultBang.t} -> ${defaultBang.u}`);
-    // Add to search history
-    searchHistoryDB.addSearch(query, defaultBang.t).catch(err => console.error("Error adding to history:", err));
-    return defaultBang.u.replace("{{{s}}}", encodeURIComponent(query).replace(/%2F/g, "/"));
-  } else {
-    // Fallback to Google if defaultBang is not available
-    console.log("No default bang available, using Google fallback");
-    // Add to search history
-    searchHistoryDB.addSearch(query, "g").catch(err => console.error("Error adding to history:", err));
-    return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+  // No bang found, use the entire query with the default bang
+  const searchUrl = generateSearchUrl(query);
+
+  if (searchUrl) {
+    // Add to search history with the default bang
+    const bangUsed = defaultBang ? defaultBang.t : "g";
+    searchHistoryDB.addSearch(query, bangUsed).catch(err => console.error("Error adding to history:", err));
+    return searchUrl;
   }
+
+  return null;
+}
+
+// Function to verify client-side redirects are working
+function verifyClientSideRedirect(url: string): boolean {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined' || !window.location) {
+    console.error("Not in a browser environment, client-side redirects won't work");
+    return false;
+  }
+
+  // Check if the URL is valid
+  try {
+    new URL(url);
+  } catch (e) {
+    console.error("Invalid URL for redirect:", url);
+    return false;
+  }
+
+  // Check if we have permission to navigate
+  if (window.location.origin === 'null') {
+    console.warn("Running in a restricted context, redirects may be blocked");
+  }
+
+  // Log that we're doing a client-side redirect
+  console.log("Performing client-side redirect to:", url);
+  console.log("Redirect timestamp:", new Date().toISOString());
+
+  return true;
 }
 
 function doRedirect() {
@@ -926,24 +1032,46 @@ function doRedirect() {
     // Add debugging information to console
     console.log(`Redirecting to: ${searchUrl}`);
 
-    // Try to redirect using window.location.replace
+    // Verify that client-side redirects are possible
+    if (!verifyClientSideRedirect(searchUrl)) {
+      console.error("Client-side redirect verification failed, showing default page instead");
+      noSearchDefaultPageRender();
+      return;
+    }
+
+    // CLIENT-SIDE ONLY REDIRECTS
+    // All redirects happen locally in the browser without server involvement
+
+    // Try to redirect using window.location.replace (preferred method - doesn't add to browser history)
     try {
+      console.log("Attempting redirect with window.location.replace");
       window.location.replace(searchUrl);
+
+      // Set a timeout to check if redirect didn't happen (may not be reliable in all browsers)
+      setTimeout(() => {
+        console.log("Redirect may not have completed, trying alternative method");
+        window.location.href = searchUrl;
+      }, 1000);
     } catch (error) {
       console.error("Error with window.location.replace:", error);
 
       // Fallback to window.location.href if replace fails
       try {
+        console.log("Attempting redirect with window.location.href");
         window.location.href = searchUrl;
       } catch (error2) {
         console.error("Error with window.location.href:", error2);
 
         // Last resort: create and click a link
+        console.log("Attempting redirect with programmatic link click");
         const link = document.createElement('a');
         link.href = searchUrl;
         link.target = '_self';
         document.body.appendChild(link);
         link.click();
+
+        // Clean up the DOM
+        setTimeout(() => document.body.removeChild(link), 100);
       }
     }
   } catch (error) {
