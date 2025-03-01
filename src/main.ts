@@ -465,6 +465,10 @@ async function renderSearchHistory() {
       { id: 'week', label: 'Last Week' }
     ];
 
+    // Get current time for last updated display
+    const now = new Date();
+    const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
     let html = `
       <div class="mb-4">
         <div class="flex justify-between items-center">
@@ -519,23 +523,26 @@ async function renderSearchHistory() {
             </button>
           </div>
         </div>
+        <div class="text-xs text-[#A6ADC8] mt-1">
+          Last updated: <span id="last-updated-time">${formattedTime}</span>
+          <button id="refresh-history" class="ml-2 text-[#B4BEFE] hover:underline">Refresh</button>
+        </div>
       </div>
       <div class="space-y-2" id="search-history-items">
     `;
 
     // Filter searches based on time
-    const now = Date.now();
-    const hour = 60 * 60 * 1000;
-    const day = 24 * hour;
+    const hourMs = 60 * 60 * 1000;
+    const day = 24 * hourMs;
     const week = 7 * day;
 
     let filteredSearches = searches;
     if (currentFilter === 'hour') {
-      filteredSearches = searches.filter(s => (now - s.timestamp) <= hour);
+      filteredSearches = searches.filter(s => (now.getTime() - s.timestamp) <= hourMs);
     } else if (currentFilter === 'day') {
-      filteredSearches = searches.filter(s => (now - s.timestamp) <= day);
+      filteredSearches = searches.filter(s => (now.getTime() - s.timestamp) <= day);
     } else if (currentFilter === 'week') {
-      filteredSearches = searches.filter(s => (now - s.timestamp) <= week);
+      filteredSearches = searches.filter(s => (now.getTime() - s.timestamp) <= week);
     }
 
     // Apply bang filter if set
@@ -747,6 +754,14 @@ async function renderSearchHistory() {
         });
       });
     }
+
+    // Add event listener for refresh button
+    const refreshButton = document.getElementById('refresh-history');
+    if (refreshButton) {
+      refreshButton.addEventListener('click', () => {
+        renderSearchHistory();
+      });
+    }
   } catch (error) {
     console.error("Error rendering search history:", error);
     historyContainer.innerHTML = `
@@ -861,6 +876,8 @@ function noSearchDefaultPageRender() {
     historySidebar.classList.remove('translate-x-full');
     overlay.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    // Refresh history when opening the sidebar
+    renderSearchHistory();
   });
 
   // Open bangs sidebar
@@ -900,6 +917,20 @@ function noSearchDefaultPageRender() {
 
   // Render custom bangs manager
   renderCustomBangsManager();
+
+  // Add visibility change event listener to update search history when the page becomes visible again
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      console.log('Page is now visible, updating search history');
+      renderSearchHistory();
+    }
+  });
+
+  // Add a listener for focus events to update history when returning to the tab
+  window.addEventListener('focus', () => {
+    console.log('Window regained focus, updating search history');
+    renderSearchHistory();
+  });
 }
 
 const LS_DEFAULT_BANG = localStorage.getItem("default-bang") ?? "g";
